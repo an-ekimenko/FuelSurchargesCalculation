@@ -105,13 +105,24 @@ D:/IT/Java/prj/excel/            # Automation root directory
 ## Configuration Specification
 
 ### External Properties (`config/config.properties`)
+
+The application expects an environment-specific configuration file named `config.properties` inside the `config/` directory. For deployment setups, copy the anonymized distribution template (`config.properties.dist`) and populate the variables with your target infrastructure nodes:
+
 ```properties
-excel_file=\\it.beloil.by\docs\common\ExchageBW\Расчет надбавок на топливо.XLS
+# Resilient corporate UNC network share path to the source master Excel workbook (.xls)
+# Syntax format: \\<server-domain-or-ip>\<share-name>\<folder-path>\<filename>.XLS
+excel_file=
+
+# Targeted worksheet identification token required for core extraction loops
 excel_sheet=Лист22
+
+# Resilient Retry Policy constraints used to mitigate transient network share locks
+# The initial baseline cooldown delay interval mapped in milliseconds (10000ms = 10 seconds)
 initial_timeout_ms=10000
+
+# Absolute limitation threshold for operational loop recovery attempts (Default: 3 tries)
 max_write_attempts=3
 ```
-*Note: The `excel_file` network path must be defined using standard UNC double-backslash layouts without excessive string escaping.*
 
 ### Logging Topologies (`config/log4j2.xml`)
 The Dual-Channel appender layout pipes events simultaneously: applying live color highlighting to the console layer and pushing persistent records into a rolling archive limited to 10 MB chunks.
