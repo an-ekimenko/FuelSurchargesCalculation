@@ -1,11 +1,16 @@
-# Global configuration template for PlannedFuelKPI service.
-# Copy this file to 'config.properties' and replace placeholders with actual deployment environment paths.
+# Global configuration template for FuelSurchargesCalculation service.
+# Copy this file to 'config.properties' in the same folder and adjust parameters.
 
-# The network path for exchange with BW
-excel_file=YOUR_PATH
-excel_sheet=YOUR_SHEET_NAME
+# Resilient corporate UNC network share path to the source master Excel workbook (.xls)
+# Syntax format: \\<server-domain-or-ip>\<share-name>\<folder-path>\<filename>.XLS
+excel_file=
 
-# Retry Policy settings for file locks
-# The initial timeout for retry attempts in milliseconds 
+# Targeted worksheet identification token required for core extraction loops
+excel_sheet=Лист22
+
+# Resilient Retry Policy constraints used to mitigate transient network share locks
+# The initial baseline cooldown delay interval mapped in milliseconds (10000ms = 10 seconds)
 initial_timeout_ms=10000
+
+# Absolute limitation threshold for operational loop recovery attempts (Default: 3 tries)
 max_write_attempts=3
