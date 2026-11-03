@@ -192,5 +192,5 @@ mvn clean package
 ### Production Execution
 The application can be launched from any location within the OS host console layer by passing the absolute reference path to the target jar (internal runtime dependencies will resolve dynamically relative to the deployment asset location):
 ```bash
-java -jar "<Path to the root of the project>\FuelSurchargesCalculation.jar"
+java -jar /path/to/FuelSurchargesCalculation.jar
 ```
