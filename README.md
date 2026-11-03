@@ -33,6 +33,24 @@ The application utilizes a clean, decoupled component architecture strictly alig
 *   **`fuel.retail.writer.ResultFileWriter` (Persistence & Formatting Layer)**: Handles character-delimited file serializations (`FuelSurchargesCalculation.txt`) matching strict UTF-8 boundaries and generates structural process check receipts for task coordinators.
 *   **`fuel.retail.model.FuelPriceEntry` (Domain Data Layer)**: A lightweight Plain Old Java Object (POJO) optimized via **Project Lombok** annotations (`@Data`, `@Builder`), providing a strongly typed entity container for transactional parsing data.
 
+### Testing Framework & Test Scenarios
+
+Для обеспечения транзакционной надежности и предотвращения регрессионных багов кодовая база проекта полностью покрыта изолированными юнит-тестами на базе **JUnit 5** и **Mockito**. Чтобы гарантировать высокую скорость выполнения и исключить влияние состояния файловой системы или блокировок ОС, логика верифицируется в памяти с использованием тестовых заглушек и механизмов Java Reflection API.
+
+#### 1. Domain Serialization Verification
+
+* **`fuel.retail.model.FuelPriceEntryTest`**  
+  Контролирует соблюдение контрактов сериализации доменных данных перед их передачей в шину интеграции SAP BW.
+  * **Standard CSV Serializer Layout**: Проверяет корректность сборки текстовой строки. Убеждается, что все динамические параметры топлива, маркеры дат и типов операций склеиваются в строгом соответствии с целевым разделителем (`;`).
+  * **Null-Safety Constraints Handler**: Проверяет устойчивость сериализатора к отсутствующим данным. Гарантирует, что при передаче пустых или `null`-значений вместо критического сбоя `NullPointerException` генерируются корректные пустые текстовые блоки (`;;`).
+
+#### 2. ETL Processing Engine Validation
+
+* **`fuel.retail.parser.RawFileParserTest`**  
+  Проверяет математическую точность и правила трансформации сырых данных ячеек двоичного формата `.xls`. Доступ к тестируемому приватному методу извлечения `readCell` осуществляется изолированно через механизмы рефлексии.
+  * **Numerical Scaling Control Precision**: Симулирует чтение числовой ячейки типа `CellType.NUMERIC` (через мок `HSSFCell`), содержащей избыточную дробную часть (например, некруглое значение цены `2480.556`). Проверяет работу встроенных математических механизмов округления, контролируя точное приведение результата к двум десятичным знакам (`2480.56`).
+  * **Dynamic Margin Percentage Transformer**: Тестирует специфичную логику обработки маржинальности при обнаружении маски числового формата процентов (`0.0%`). Верифицирует, что сырое значение (например, `0.0254`) корректно масштабируется, умножаясь на 100, и преобразуется в строго фиксированный формат с одним десятичным знаком (`2.5`) без дрейфа точности `double`.
+
 ---
 
 ## Technical Highlights
