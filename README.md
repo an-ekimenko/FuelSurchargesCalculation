@@ -30,26 +30,27 @@ The application utilizes a clean, decoupled component architecture strictly alig
 *   **`fuel.retail.config.AppConfig` (Configuration & Bootstrap Layer)**: The absolute initialization anchor of the system. Resolves runtime home path scopes, injects log routing metadata directly into the active JVM context, and parses external properties using native Java NIO stream boundaries.
 *   **`fuel.retail.Main` (Orchestrator Layer)**: The primary application execution entry point. Coordinates the synchronized lifecycle invocation, encapsulates the isolated temporary file mirroring procedures, and enforces the fault-tolerant **Retry Policy** loop boundaries.
 *   **`fuel.retail.parser.RawFileParser` (Extraction & Transformation Layer)**: Handles structural worksheet row inspections, tracks localized row parameters using the Stateful Tracking Pattern to resolve merged date cells, and triggers explicit formula cache updates.
+    * `Loose Coupling` via Unified Initialization: Using WorkbookFactory.create() ensures loose coupling with file formats, keeping initialization unchanged even with future Apache POI updates.
 *   **`fuel.retail.writer.ResultFileWriter` (Persistence & Formatting Layer)**: Handles character-delimited file serializations (`FuelSurchargesCalculation.txt`) matching strict UTF-8 boundaries and generates structural process check receipts for task coordinators.
 *   **`fuel.retail.model.FuelPriceEntry` (Domain Data Layer)**: A lightweight Plain Old Java Object (POJO) optimized via **Project Lombok** annotations (`@Data`, `@Builder`), providing a strongly typed entity container for transactional parsing data.
 
 ### Testing Framework & Test Scenarios
 
-Для обеспечения транзакционной надежности и предотвращения регрессионных багов кодовая база проекта полностью покрыта изолированными юнит-тестами на базе **JUnit 5** и **Mockito**. Чтобы гарантировать высокую скорость выполнения и исключить влияние состояния файловой системы или блокировок ОС, логика верифицируется в памяти с использованием тестовых заглушек и механизмов Java Reflection API.
+To ensure transactional reliability and prevent regression bugs, the codebase is fully covered by isolated unit tests based on **JUnit 5** and **Mockito**. To guarantee high-speed execution and eliminate dependencies on the file system state or OS locks, the processing logic is verified strictly in-memory using test stubs and Java Reflection API mechanisms.
 
 #### 1. Domain Serialization Verification
 
 * **`fuel.retail.model.FuelPriceEntryTest`**  
-  Контролирует соблюдение контрактов сериализации доменных данных перед их передачей в шину интеграции SAP BW.
-  * **Standard CSV Serializer Layout**: Проверяет корректность сборки текстовой строки. Убеждается, что все динамические параметры топлива, маркеры дат и типов операций склеиваются в строгом соответствии с целевым разделителем (`;`).
-  * **Null-Safety Constraints Handler**: Проверяет устойчивость сериализатора к отсутствующим данным. Гарантирует, что при передаче пустых или `null`-значений вместо критического сбоя `NullPointerException` генерируются корректные пустые текстовые блоки (`;;`).
+  Enforces compliance with domain data serialization contracts before payloads are dispatched to the SAP BW integration bus.
+  * **Standard CSV Serializer Layout**: Validates the correctness of the generated text string, ensuring that all dynamic fuel parameters, date markers, and operation type tags are concatenated in strict compliance with the target semicolon delimiter (`;`).
+  * **Null-Safety Constraints Handler**: Verifies the serializer's resilience against missing data, guaranteeing that `null` or empty entries smoothly produce valid empty text blocks (`;;`) instead of triggering a fatal `NullPointerException`.
 
 #### 2. ETL Processing Engine Validation
 
 * **`fuel.retail.parser.RawFileParserTest`**  
-  Проверяет математическую точность и правила трансформации сырых данных ячеек двоичного формата `.xls`. Доступ к тестируемому приватному методу извлечения `readCell` осуществляется изолированно через механизмы рефлексии.
-  * **Numerical Scaling Control Precision**: Симулирует чтение числовой ячейки типа `CellType.NUMERIC` (через мок `HSSFCell`), содержащей избыточную дробную часть (например, некруглое значение цены `2480.556`). Проверяет работу встроенных математических механизмов округления, контролируя точное приведение результата к двум десятичным знакам (`2480.56`).
-  * **Dynamic Margin Percentage Transformer**: Тестирует специфичную логику обработки маржинальности при обнаружении маски числового формата процентов (`0.0%`). Верифицирует, что сырое значение (например, `0.0254`) корректно масштабируется, умножаясь на 100, и преобразуется в строго фиксированный формат с одним десятичным знаком (`2.5`) без дрейфа точности `double`.
+  Validates the mathematical accuracy and transformation rules applied to raw cell data extracted from binary `.xls` files. Isolated access to the private `readCell` target method under test is achieved via reflection mechanisms.
+  * **Numerical Scaling Control Precision**: Simulates parsing a `CellType.NUMERIC` cell (via a mocked `HSSFCell`) containing an unrounded fractional part (e.g., a non-standard price value of `2480.556`). It verifies the internal mathematical rounding controls, asserting that the value is precisely scaled to exactly two decimal places (`2480.56`).
+  * **Dynamic Margin Percentage Transformer**: Evaluates specialized margin processing logic triggered when a percentage number format mask (`0.0%`) is encountered. It verifies that raw decimal values (e.g., `0.0254`) are scaled correctly by a factor of 100 and converted into a fixed single-decimal format (`2.5`) without floating-point precision drift.
 
 ---
 
@@ -73,6 +74,10 @@ In enterprise environments, writing output target buffers to distributed file sy
     *   *Failure 1 (Attempt 1)*: $10000 \times (1 + 1^0) = 20,000$ ms delay before retry.
     *   *Failure 2 (Attempt 2)*: $10000 \times (1 + 2^1) = 30,000$ ms delay before retry.
 
+### 5. Automated Format Detection & Extension Mismatch Resilience (WorkbookFactory)
+Business operators frequently make manual errors, such as renaming file extensions (e.g., swapping .xlsx to .xls or vice versa) before publishing them to shared network directories. By leveraging the WorkbookFactory engine rather than strictly hardcoding specific subclass constructors (such as XSSFWorkbook or HSSFWorkbook), the system enforces:
+* **Dynamic Binary Signature Analysis:** The internal file format is resolved automatically by evaluating its underlying binary headers (magic numbers), ignoring the arbitrary text extension specified in the filename.
+* **Human-Error Safeguards:** The parsing utility successfully ingests and processes improperly renamed workbooks, preventing catastrophic integration pipeline failures caused by unexpected format-to-structure mismatches.
 ---
 
 ## Deployment Topology & Dependency Isolation
