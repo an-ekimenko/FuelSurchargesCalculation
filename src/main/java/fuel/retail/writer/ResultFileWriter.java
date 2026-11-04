@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -41,7 +43,7 @@ public class ResultFileWriter {
         File txtFile = new File(dir, CSV_FILE_NAME);
         log.info("Saving parsed entities to file: {}", txtFile.getAbsolutePath());
 		
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(txtFile), "UTF-8"))) {
+        try (Writer writer = Files.newBufferedWriter(txtFile.toPath(), StandardCharsets.UTF_8)) {
             for (FuelPriceEntry entry : entries) { 
                 writer.append(entry.toCsvRow(";")).append('\n');
             }
